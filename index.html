@@ -1,40 +1,166 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 GitHub Pages 網頁</title>
-</head>
-<body>
-    <h1>從 Google Sheets 讀取的資料：</h1>
-    <div id="loading">資料載入中，請稍候...</div>
-    <ul id="data-list"></ul>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+    <base target="_top">
+    <style type="text/css">
+      @charset "UTF-8";
+      /* ================= 樣式設定區 ================= */
+      input::placeholder { font-size: 16px; } /* 輸入提示字體大小 */
+      label { color: #333333; font-weight: bold; } /* 標籤顏色 */
+      body, input, select, table { font-family: "微軟正黑體", Arial, Verdana; }
+      
+      /* 響應式字體設定 (保留你原本的設定) */
+      @media (min-width: 320px) { body, input, select, table { font-size: 20px; } .lab { font-size: 28px; } }
+      @media (min-width: 576px) { body, input, select, table { font-size: 22px; } .lab { font-size: 30px; } }
+      @media (min-width: 768px) { body, input, select, table { font-size: 24px; } .lab { font-size: 32px; } }
+      @media (min-width: 992px) { body, input, select, table { font-size: 26px; } .lab { font-size: 34px; } }
+      @media (min-width: 1200px) { body, input, select, table { font-size: 28px; } .lab { font-size: 36px; } }
+      
+      /* 狀態訊息樣式 */
+      #status-msg { margin-top: 15px; font-size: 18px; font-weight: bold; }
+    </style>
 
-    <script>
-        // 將這裡替換成你剛剛複製的 GAS 網址
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwYpXM5vXM-y-HTAn3kwnAD0liHCyeqA5xiR3ZVfumw2Hhf1IJB3tggZ0tEuvsI6AGa/exec';
+    <script language="javascript">
+      // ================= 網頁設定區 =================
+      // 以前這些是從 GAS 後端抓的，現在直接在前端設定
+      const config = {
+        apiUrl: "https://script.google.com/macros/s/你的部署ID/exec", // ⚠️ 替換成你的 GAS Web App 網址
+        
+        // 欄位啟用設定 (true 開啟 / false 關閉)
+        item1: { open: true,  title: "帳號", hint: "請輸入帳號" }, // 第1項預設必開
+        item2: { open: true,  title: "密碼", hint: "請輸入密碼" },
+        item3: { open: false, title: "欄位3", hint: "請輸入欄位3" },
+        item4: { open: false, title: "欄位4", hint: "請輸入欄位4" },
+        item5: { open: false, title: "欄位5", hint: "請輸入欄位5" }
+      };
 
-        // 呼叫 API 取得資料
-        fetch(scriptUrl)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none'; // 隱藏載入中文字
-                
-                const list = document.getElementById('data-list');
-                // 假設 data 是一個二維陣列
-                data.forEach((row, index) => {
-                    // 略過第一行的標題
-                    if (index > 0) {
-                        let li = document.createElement('li');
-                        li.textContent = `欄位1: ${row[0]} | 欄位2: ${row[1]}`;
-                        list.appendChild(li);
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('發生錯誤:', error);
-                document.getElementById('loading').innerText = '資料載入失敗！';
-            });
+      // 網頁載入後，根據 config 設定顯示/隱藏欄位與標題
+      window.onload = function() {
+        for(let i=1; i<=5; i++) {
+          let itemConfig = config['item'+i];
+          if(itemConfig.open) {
+            document.getElementById('input'+i).style.display = 'table-row';
+            document.getElementById('title'+i).innerText = itemConfig.title;
+            document.getElementById('item'+i).placeholder = itemConfig.hint;
+          }
+        }
+      };
+
+      // ================= 表單檢查與送出 =================
+      function go() {
+        var err_msg = '';
+        
+        // 檢查欄位 (由後往前檢查)
+        for(let i=5; i>=1; i--) {
+          let item = document.getElementById('item'+i);
+          if(config['item'+i].open) {
+            item.style.backgroundColor = 'transparent';
+            if(item.value === '') {
+              item.style.backgroundColor = '#FFEEFF';
+              err_msg = '\n「' + config['item'+i].title + '」不能為空白。' + err_msg;
+              item.focus();
+            }
+          }
+        }
+
+        const statusMsg = document.getElementById('status-msg');
+
+        if(err_msg === '') {
+          // 檢查無誤，準備送出到 GAS API
+          statusMsg.style.color = '#f0ad4e';
+          statusMsg.innerText = "資料查詢/傳送中，請稍候...";
+
+          const formElement = document.getElementById('fm');
+          const formData = new FormData(formElement);
+          const data = new URLSearchParams(formData);
+
+          fetch(config.apiUrl, {
+              method: 'POST',
+              body: data
+          })
+          .then(response => response.json())
+          .then(result => {
+              if(result.status === 'success') {
+                  statusMsg.style.color = 'forestgreen';
+                  statusMsg.innerText = "✅ 送出成功！";
+                  // 這裡可以根據你的需求，處理後端回傳的資料
+                  // console.log(result.data); 
+              } else {
+                  statusMsg.style.color = 'red';
+                  statusMsg.innerText = "❌ 發生錯誤：" + (result.message || "未知錯誤");
+              }
+          })
+          .catch(error => {
+              console.error('發生錯誤:', error);
+              statusMsg.style.color = 'red';
+              statusMsg.innerText = "❌ 無法連線至伺服器。";
+          });
+
+        } else {
+          alert('表單填寫錯誤：' + err_msg);
+        }
+      }
+
+      function renew() {
+        document.getElementById('fm').reset();
+        for(let i=1; i<=5; i++) {
+          document.getElementById('item'+i).style.backgroundColor = 'transparent';
+        }
+        document.getElementById('status-msg').innerText = '';
+      }
     </script>
-</body>
+  </head>
+  
+  <body>
+    <center>
+      <p>
+        <!-- 學校與系統名稱，請直接在這裡修改 -->
+        <div class="lab" style="font-weight: bold; color: #000080;">你的學校名稱 (請手動修改)</div>
+        <div class="lab" style="font-weight: bold; color: #333333;">系統名稱 (請手動修改)</div>
+      </p>
+      
+      <!-- 注意：移除了 action 和 method，交由 JavaScript fetch 處理 -->
+      <form id="fm">
+        <table>
+          <tr id="input1" style="display: none;">
+            <td><label id="title1"></label></td>
+            <td><input id="item1" type="text" size="18" name="item1"></td>
+          </tr>
+          <tr id="input2" style="display: none;">
+            <td><label id="title2"></label></td>
+            <td><input id="item2" type="password" size="18" name="item2"></td> <!-- 預設為密碼 -->
+          </tr>
+          <tr id="input3" style="display: none;">
+            <td><label id="title3"></label></td>
+            <td><input id="item3" type="text" size="18" name="item3"></td>
+          </tr>
+          <tr id="input4" style="display: none;">
+            <td><label id="title4"></label></td>
+            <td><input id="item4" type="text" size="18" name="item4"></td>
+          </tr>
+          <tr id="input5" style="display: none;">
+            <td><label id="title5"></label></td>
+            <td><input id="item5" type="text" size="18" name="item5"></td>
+          </tr>
+        </table>
+        
+        <p>
+          <input type="button" value="查詢 / 送出" onclick="javascript: go();">
+          <input type="button" value="重填" onclick="javascript: renew();">
+        </p>
+        
+        <!-- 用來顯示 API 傳送狀態的區塊 -->
+        <div id="status-msg"></div>
+      </form>
+      
+      <!--頁尾說明-->
+      <table style="font-size: 14px; margin-top: 20px;">
+        <tr><td>程式提供：</td><td>溪湖高中註冊組童冠傑</td></tr>
+        <tr valign="top"><td>程式修改：</td><td>高雄高工註冊組王昇豊<br>花蓮女中註冊組張家誠</td></tr>
+        <tr><td>前端改版：</td><td>GitHub Pages API 版本</td></tr>
+      </table>
+    </center>
+  </body>
 </html>
