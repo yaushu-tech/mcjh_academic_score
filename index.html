@@ -3,38 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 GitHub Pages 網頁</title>
+    <title>填寫資料送到 Google Sheets</title>
+    <style>
+        /* 簡單的樣式讓表單好看一點 */
+        body { font-family: sans-serif; padding: 20px; max-width: 400px; }
+        input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        button { padding: 10px 20px; cursor: pointer; background-color: #007BFF; color: white; border: none; }
+        #status { margin-top: 15px; font-weight: bold; color: #d9534f; }
+    </style>
 </head>
 <body>
-    <h1>從 Google Sheets 讀取的資料：</h1>
-    <div id="loading">資料載入中，請稍候...</div>
-    <ul id="data-list"></ul>
+
+    <h2>新增資料表單</h2>
+    
+    <!-- 建立一個表單，name 屬性對應你 GAS 裡的 item1 ~ item5 -->
+    <form id="myForm">
+        <label>資料 1：</label>
+        <input type="text" name="item1" required>
+        
+        <label>資料 2：</label>
+        <input type="text" name="item2" required>
+        
+        <label>資料 3：</label>
+        <input type="text" name="item3">
+        
+        <label>資料 4：</label>
+        <input type="text" name="item4">
+        
+        <label>資料 5：</label>
+        <input type="text" name="item5">
+
+        <button type="submit">送出資料</button>
+    </form>
+
+    <!-- 用來顯示「傳送中」或「成功」的訊息 -->
+    <div id="status"></div>
 
     <script>
-        // 將這裡替換成你剛剛複製的 GAS 網址
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbzCdjRDJ5WdZNkBLRh6nY9jkOQ8GOGip2kbRKOXoQ0Upa3I69ZKPRstVTsZx0bxFAJz/exec';
+        // 1. 綁定表單的「送出(submit)」事件
+        document.getElementById('myForm').addEventListener('submit', function(event) {
+            
+            // 阻止網頁預設的重新整理行為 (非常重要！)
+            event.preventDefault(); 
+            
+            // 顯示傳送中提示
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.color = '#f0ad4e';
+            statusDiv.innerText = "資料傳送中，請稍候...";
 
-        // 呼叫 API 取得資料
-        fetch(scriptUrl)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none'; // 隱藏載入中文字
-                
-                const list = document.getElementById('data-list');
-                // 假設 data 是一個二維陣列
-                data.forEach((row, index) => {
-                    // 略過第一行的標題
-                    if (index > 0) {
-                        let li = document.createElement('li');
-                        li.textContent = `欄位1: ${row[0]} | 欄位2: ${row[1]}`;
-                        list.appendChild(li);
-                    }
-                });
+            // 2. 替換成你部署 GAS 後取得的 Web App 網址
+            const apiUrl = 'https://script.google.com/macros/s/AKfycbzr3Eo96NUmKHEk50vIDY2cG7dAjHpxQkF1_qHGZSu-xIRqAR3rhJ2G6_qKlXHm-xtv/exec';
+
+            // 3. 自動收集表單內所有帶有 name 屬性的輸入框資料
+            const formData = new FormData(this);
+            // 將資料轉換成 GAS 看得懂的格式
+            const data = new URLSearchParams(formData); 
+
+            // 4. 透過 fetch POST 發送資料到後端 (GAS)
+            fetch(apiUrl, {
+                method: 'POST',
+                body: data
+            })
+            .then(response => response.json()) // 接收 GAS 回傳的 JSON 格式結果
+            .then(result => {
+                // 判斷 GAS 回傳的狀態
+                if(result.status === 'success') {
+                    statusDiv.style.color = '#5cb85c';
+                    statusDiv.innerText = "✅ 資料送出成功！";
+                    this.reset(); // 清空表單欄位，方便填寫下一筆
+                } else {
+                    statusDiv.style.color = '#d9534f';
+                    statusDiv.innerText = "❌ 送出失敗，請檢查程式碼。";
+                }
             })
             .catch(error => {
                 console.error('發生錯誤:', error);
-                document.getElementById('loading').innerText = '資料載入失敗！';
+                statusDiv.style.color = '#d9534f';
+                statusDiv.innerText = "❌ 發生連線錯誤，請確認網址是否正確。";
             });
+        });
     </script>
+
 </body>
 </html>
