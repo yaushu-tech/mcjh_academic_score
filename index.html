@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Sheets API 測試</title>
+</head>
+<body>
+    <h1>我的試算表資料</h1>
+    <ul id="data-list"></ul>
+
+    <script>
+        // 貼上你剛剛複製的 Google Apps Script 網址
+        const API_URL = https://script.google.com/macros/s/AKfycbyj76GxU7HbAxXsg7KLxE8XJ8I_shY_nYvzp3YSu_uDO71wra8CgK3CF40IVRvuUnhN/exec;
+
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('data-list');
+                // 略過第一行的標題，從第二行開始顯示
+                for(let i = 1; i < data.length; i++) {
+                    let li = document.createElement('li');
+                    li.textContent = `姓名: ${data[i][0]}, 信箱: ${data[i][1]}`;
+                    list.appendChild(li);
+                }
+            })
+            .catch(error => console.error('錯誤:', error));
+    </script>
+</body>
+</html>
