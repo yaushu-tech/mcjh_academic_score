@@ -2,28 +2,39 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Google Sheets API 測試</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 GitHub Pages 網頁</title>
 </head>
 <body>
-    <h1>我的試算表資料</h1>
+    <h1>從 Google Sheets 讀取的資料：</h1>
+    <div id="loading">資料載入中，請稍候...</div>
     <ul id="data-list"></ul>
 
     <script>
-        // 貼上你剛剛複製的 Google Apps Script 網址
-        const API_URL = https://script.google.com/macros/s/AKfycbyj76GxU7HbAxXsg7KLxE8XJ8I_shY_nYvzp3YSu_uDO71wra8CgK3CF40IVRvuUnhN/exec;
+        // 將這裡替換成你剛剛複製的 GAS 網址
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbxryG5gK2vev_-05jnmP0OAzehtMO9rvuTACRfSEUXgOgY3YKf-5TXUR7ABV8jraUg/exec';
 
-        fetch(API_URL)
+        // 呼叫 API 取得資料
+        fetch(scriptUrl)
             .then(response => response.json())
             .then(data => {
+                document.getElementById('loading').style.display = 'none'; // 隱藏載入中文字
+                
                 const list = document.getElementById('data-list');
-                // 略過第一行的標題，從第二行開始顯示
-                for(let i = 1; i < data.length; i++) {
-                    let li = document.createElement('li');
-                    li.textContent = `姓名: ${data[i][0]}, 信箱: ${data[i][1]}`;
-                    list.appendChild(li);
-                }
+                // 假設 data 是一個二維陣列
+                data.forEach((row, index) => {
+                    // 略過第一行的標題
+                    if (index > 0) {
+                        let li = document.createElement('li');
+                        li.textContent = `欄位1: ${row[0]} | 欄位2: ${row[1]}`;
+                        list.appendChild(li);
+                    }
+                });
             })
-            .catch(error => console.error('錯誤:', error));
+            .catch(error => {
+                console.error('發生錯誤:', error);
+                document.getElementById('loading').innerText = '資料載入失敗！';
+            });
     </script>
 </body>
 </html>
