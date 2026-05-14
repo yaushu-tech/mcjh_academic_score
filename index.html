@@ -29,8 +29,8 @@
         apiUrl: "https://script.google.com/macros/s/AKfycbwYpXM5vXM-y-HTAn3kwnAD0liHCyeqA5xiR3ZVfumw2Hhf1IJB3tggZ0tEuvsI6AGa/exec", // ⚠️ 替換成你的 GAS Web App 網址
         
         // 欄位啟用設定 (true 開啟 / false 關閉)
-        item1: { open: true,  title: "帳號", hint: "請輸入帳號" }, // 第1項預設必開
-        item2: { open: true,  title: "密碼", hint: "請輸入密碼" },
+        item1: { open: true,  title: "生日", hint: "例如2012-05-12(西元2012年5月12日)" }, // 第1項預設必開
+        item2: { open: true,  title: "身分證字號", hint: "英文字母需大寫" },
         item3: { open: false, title: "欄位3", hint: "請輸入欄位3" },
         item4: { open: false, title: "欄位4", hint: "請輸入欄位4" },
         item5: { open: false, title: "欄位5", hint: "請輸入欄位5" }
@@ -83,11 +83,20 @@
           .then(response => response.json())
           .then(result => {
               if(result.status === 'success') {
-                  statusMsg.style.color = 'forestgreen';
-                  statusMsg.innerText = "✅ 送出成功！";
-                  // 這裡可以根據你的需求，處理後端回傳的資料
-                  // console.log(result.data); 
+                  // ✅ 成功收到 GAS 的回傳！
+                  
+                  // 1. 把原本的登入表單隱藏起來
+                  document.getElementById('fm').style.display = 'none';
+                  statusMsg.style.display = 'none';
+                  
+                  // 2. 把結果 iframe 區塊顯示出來
+                  document.getElementById('result-area').style.display = 'block';
+                  
+                  // 3. 將 GAS 傳回來的完整 HTML 字串，塞進 iframe 的 srcdoc 裡面
+                  document.getElementById('result-frame').srcdoc = result.html;
+                  
               } else {
+                  // ❌ 系統層級的錯誤
                   statusMsg.style.color = 'red';
                   statusMsg.innerText = "❌ 發生錯誤：" + (result.message || "未知錯誤");
               }
@@ -154,7 +163,17 @@
         <!-- 用來顯示 API 傳送狀態的區塊 -->
         <div id="status-msg"></div>
       </form>
-      
+      <div id="status-msg"></div>
+
+      <!-- ✨ 新增這裡：用來顯示結果的 iframe 區塊 (預設隱藏) -->
+      <div id="result-area" style="display: none; width: 100%; max-width: 800px; margin: 0 auto;">
+          <!-- 使用 srcdoc 屬性，可以直接把 HTML 字串渲染成獨立網頁 -->
+          <iframe id="result-frame" style="width: 100%; height: 70vh; min-height: 500px; border: 2px solid #ccc; border-radius: 8px; background-color: #fff;"></iframe>
+          
+          <p style="margin-top: 15px;">
+              <input type="button" value="返回重新查詢" onclick="javascript: location.reload();" style="padding: 10px 20px; font-size: 18px; cursor: pointer;">
+          </p>
+      </div>
       <!--頁尾說明-->
       <table style="font-size: 14px; margin-top: 20px;">
         <tr><td>程式提供：</td><td>溪湖高中註冊組童冠傑</td></tr>
